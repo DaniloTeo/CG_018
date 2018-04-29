@@ -35,28 +35,30 @@ const int SCALE = 4;
 
 // Variaveis
 double rot; // Angulo de Rotacao
-GLfloat abCenterX = 10.0f, abCenterY = 50.0f;
+GLfloat abCenterX = 10.0f, abCenterY = 50.0f, legRotation = 10.0;
+int legState = 0;
 
 // Vetores
-Vector vel;
 Vector dir;
 Vector dis;
 Vector mouseCoords;
+
+void rotateInPlace(float x, float y, float angle){
+	glTranslatef(x, y, 0);
+	glRotatef(angle, 0, 0, 1);
+	glTranslatef(-x, -y, 0);
+}
 
 void display() {
 	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 	glLoadIdentity();
 	glOrtho(0, SCREEN_WIDTH / SCALE, SCREEN_HEIGHT / SCALE, 0, -100, 100);
-	//gluOrtho2D(0, SCREEN_WIDTH/4, 0, SCREEN_HEIGHT/4);
 
 	// Desenhando
 	glColor3f(1, 0, 0);
 
 	// Leva em 0,0 rotaciona e retorna a posicao certa
-	glTranslatef(abCenterX, abCenterY, 0);
-	glRotatef(-rot, 0, 0, 1);
-	glTranslatef(-abCenterX, -abCenterY, 0);
-	
+	rotateInPlace(abCenterX, abCenterY, -rot);
 	drawSpider();
 
 	glFlush();
@@ -66,6 +68,7 @@ void display() {
 void mouse(int btn, int state, int x, int y) {
 	mouseCoords.x = x / SCALE;
 	mouseCoords.y = y / SCALE;
+	legState = 1;
 }
 
 void move() {
@@ -77,14 +80,21 @@ void move() {
 	if(rot < 0){
 		rot = 360 + rot;
 	}
-	printf("Rodando em %f\n", rot);
+	//printf("Rodando em %f\n", rot);
 
 	// Se nao esta na posicao do mouse, move
 	if(abs(dis.x) > 0.01 || abs(dis.y) > 0.01){
-		printf("Distancia em x: %f y: %f\n", dis.x, dis.y);
-		abCenterX += dis.x / 10;
-		abCenterY += dis.y / 10;
-	} 
+		//printf("Distancia em x: %f y: %f\n", dis.x, dis.y);
+		abCenterX += dis.x / 70;
+		abCenterY += dis.y / 70;
+		if(legState == 1){
+			legState = -1;
+		} else {
+			legState = 1;
+		}
+	} else {
+		legState = 0;
+	}
 }
 
 void update(int value) {
@@ -125,7 +135,7 @@ void drawSpider() {
 
 	//abCenterX and abCenterY are the Abdomen's center coordinates,
 	//and will be used as reference on the other parts of the spider
-	GLfloat abRadius = 5.0f;
+	GLfloat abRadius = 4.0f;
 	drawAbdomen(abCenterX, abCenterY, abRadius, linesQuantity);
 
 	GLfloat	cefaloRadius = 3.0f;
@@ -171,20 +181,28 @@ void drawEyes(GLfloat rightEyeX, GLfloat leftEyeX, GLfloat rightEyeY, GLfloat le
 }
 
 void drawLegs(GLfloat cefaloCenterX, GLfloat cefaloCenterY, GLfloat cefaloRadius, int linesQuantity) {
-	drawUpperLeftLeg(cefaloCenterX, cefaloCenterY, cefaloRadius, linesQuantity);
+	
+	rotateInPlace(cefaloCenterX, cefaloCenterY, legRotation*legState);
+
 	drawUpperRightLeg(cefaloCenterX, cefaloCenterY, cefaloRadius, linesQuantity);
-
-	drawBottomLeftLeg(cefaloCenterX, cefaloCenterY, cefaloRadius, linesQuantity);
-	drawBottomRightLeg(cefaloCenterX, cefaloCenterY, cefaloRadius, linesQuantity);
-
+	drawUpperLeftLeg(cefaloCenterX, cefaloCenterY, cefaloRadius, linesQuantity);
 	drawBottomMiddleLeftLeg(cefaloCenterX, cefaloCenterY, cefaloRadius, linesQuantity);
 	drawBottomMiddleRightLeg(cefaloCenterX, cefaloCenterY, cefaloRadius, linesQuantity);
 
+	rotateInPlace(cefaloCenterX, cefaloCenterY, -legRotation*legState);
+
+	rotateInPlace(cefaloCenterX, cefaloCenterY, -legRotation*legState);
+
+	drawBottomLeftLeg(cefaloCenterX, cefaloCenterY, cefaloRadius, linesQuantity);
+	drawBottomRightLeg(cefaloCenterX, cefaloCenterY, cefaloRadius, linesQuantity);
 	drawUpperMiddleLeftLeg(cefaloCenterX, cefaloCenterY, cefaloRadius, linesQuantity);
 	drawUpperMiddleRightLeg(cefaloCenterX, cefaloCenterY, cefaloRadius, linesQuantity);
+
+	rotateInPlace(cefaloCenterX, cefaloCenterY, legRotation*legState);
+
 }
 
-void drawUpperLeftLeg(GLfloat cefaloCenterX, GLfloat cefaloCenterY, GLfloat cefaloRadius, int linesQuantity) {
+void drawUpperRightLeg(GLfloat cefaloCenterX, GLfloat cefaloCenterY, GLfloat cefaloRadius, int linesQuantity) {
 	//PERNA ESQ
 
 	//Leg base
@@ -206,7 +224,7 @@ void drawUpperLeftLeg(GLfloat cefaloCenterX, GLfloat cefaloCenterY, GLfloat cefa
 	glEnd();
 }
 
-void drawUpperRightLeg(GLfloat cefaloCenterX, GLfloat cefaloCenterY, GLfloat cefaloRadius, int linesQuantity) {
+void drawUpperLeftLeg(GLfloat cefaloCenterX, GLfloat cefaloCenterY, GLfloat cefaloRadius, int linesQuantity) {
 	//Leg Base
 	GLfloat upperRightLegBaseX = cefaloCenterX + (cefaloRadius * cos((300 * 2 * M_PI) / linesQuantity));
 	GLfloat upperRightLegBaseY = cefaloCenterY + (cefaloRadius * sin((300 * 2 * M_PI) / linesQuantity));
