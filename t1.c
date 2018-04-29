@@ -36,7 +36,6 @@ const int SCALE = 4;
 // Variaveis
 double rot; // Angulo de Rotacao
 GLfloat abCenterX = 10.0f, abCenterY = 50.0f;
-int rotating = 0; // Flag de Rotacao
 
 // Vetores
 Vector vel;
@@ -53,12 +52,13 @@ void display() {
 	// Desenhando
 	glColor3f(1, 0, 0);
 
-	if(rotating == 1){		
-		//glRotatef(rot, 0, 0, 1);
-		rotating = 0;
-	} 
-	drawSpider();
+	// Leva em 0,0 rotaciona e retorna a posicao certa
+	glTranslatef(abCenterX, abCenterY, 0);
+	glRotatef(-rot, 0, 0, 1);
+	glTranslatef(-abCenterX, -abCenterY, 0);
 	
+	drawSpider();
+
 	glFlush();
 	glutSwapBuffers();
 }
@@ -66,27 +66,25 @@ void display() {
 void mouse(int btn, int state, int x, int y) {
 	mouseCoords.x = x / SCALE;
 	mouseCoords.y = y / SCALE;
-	rotating = 1;
 }
 
 void move() {
 	dis.x = mouseCoords.x - abCenterX;
 	dis.y = mouseCoords.y - abCenterY;
-	
+
+	// Pega o angulo considerando a regra da mao direita em z
+	rot = atan2(dis.y, dis.x) * (-180) / 3.14;
+	if(rot < 0){
+		rot = 360 + rot;
+	}
+	printf("Rodando em %f\n", rot);
+
 	// Se nao esta na posicao do mouse, move
-	if(rotating == 0 && abs(dis.x) > 0.01 && abs(dis.y) > 0.01){
+	if(abs(dis.x) > 0.01 || abs(dis.y) > 0.01){
 		printf("Distancia em x: %f y: %f\n", dis.x, dis.y);
 		abCenterX += dis.x / 10;
 		abCenterY += dis.y / 10;
 	} 
-	if(rotating == 1){
-		// Pega o angulo corretamente, considerando rotacao em z e regra da mao direita
-		rot = atan2(dis.y, dis.x) * (-180) / 3.14;
-		if(rot < 0){
-			rot = 360 + rot;
-		}
-		printf("Rodando em %f\n", rot);
-	}
 }
 
 void update(int value) {
@@ -206,7 +204,6 @@ void drawUpperLeftLeg(GLfloat cefaloCenterX, GLfloat cefaloCenterY, GLfloat cefa
 	glVertex2f(upperLeftCotLegX, upperLeftCotLegY); //cotovelo
 	glVertex2f(upperLeftExtLegX, upperLeftExtLegY); //extremidade
 	glEnd();
-
 }
 
 void drawUpperRightLeg(GLfloat cefaloCenterX, GLfloat cefaloCenterY, GLfloat cefaloRadius, int linesQuantity) {
