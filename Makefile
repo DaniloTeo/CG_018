@@ -1,6 +1,10 @@
 all:
-	gcc -o app -g ./src/*c -I./include -lm
+	gcc -o t2 -g t2.c -lm -lglut -lGLU -lGL
+	./t2
 run:
-	./app
+	./t2
 valgrind:
-	valgrind --tool=memcheck --leak-check=full ./app < 01.in
+	gcc -o t2 -g t2.c -lm -lglut -lGLU -lGL
+	valgrind --tool=memcheck --leak-check=full ./t2
+clean:
+	rm t2
