@@ -16,7 +16,7 @@ const GLfloat cefaloRadius = 1.0f;
 const int cefaloStacks = 20;
 const int cefaloSlices = 20;
 
-
+const GLfloat STEP_SIZE = 0.5f;
 
 
 typedef struct vertex{
@@ -25,8 +25,52 @@ typedef struct vertex{
 	GLfloat z;
 } Vertex;
 
+/**
+ * funcao para ajudar a fazer vertex mais rapido
+ */
+Vertex* newVertex(GLfloat x, GLfloat y, GLfloat z) {
+    Vertex* v = (Vertex*) malloc (1 * sizeof(Vertex));
+    v -> x = x;
+    v -> y = y;
+    v -> z = z;
+    return v;
+}
+/**
+ * funcao para somar vertexes mais rapido
+ * v recebe a soma de a e b
+ */
+void addVertexesv(Vertex* v, Vertex* a, Vertex* b) {
+    v -> x = a -> x + b -> x;
+    v -> y = a -> y + b -> y;
+    v -> z = a -> z + b -> z;
+}
+
+/**
+ * funcao para somar vertexes mais rapido
+ * v recebe a soma de a e outro vertex que corresponde a (x, y, z)
+ */
+void addVertexes(Vertex* v, Vertex* a, GLfloat x, GLfloat y, GLfloat z) {
+    v -> x = a -> x + x;
+    v -> y = a -> y + y;
+    v -> z = a -> z + z;
+}
+
+/**
+ * funcao para multiplicar vertexes por escalares mais rapido
+ * v recebe vertex a multiplicado pelo escalar b
+ */
+void mulVertex(Vertex* v, Vertex* a, int b) {
+    v -> x = a -> x * b;
+    v -> y = a -> y * b;
+    v -> z = a -> z * b;
+}
+
 Vertex cefaloCenter;
 Vertex abCenter;
+Vertex* spiderCenter;
+Vertex* spiderFrontDir;
+Vertex* origin;
+GLint ACTIVE_KEY;
 
 
 
@@ -34,16 +78,10 @@ Vertex abCenter;
 //DESENHO DA ARANHA
 void drawAbdomen(GLfloat center_x, GLfloat center_y, GLfloat center_z);
 void drawCefaloTorax(GLfloat center_x, GLfloat center_y, GLfloat center_z);
-void drawUpperLeftLeg(int linesQuantity) ;
-void drawUpperRightLeg(int linesQuantity) ;
-void drawBottomLeftLeg(int linesQuantity) ;
-void drawBottomRightLeg(int linesQuantity) ;
-void drawBottomMiddleLeftLeg(int linesQuantity) ;
-void drawBottomMiddleRightLeg(int linesQuantity) ;
-void drawUpperMiddleLeftLeg(int linesQuantity) ;
-void drawUpperMiddleRightLeg(int linesQuantity) ;
-void drawLegs(int linesQuantity) ;
+void drawLegs();
 void drawSpider();
+void handle_SpecialFunc(GLint key, GLint x, GLint y);
+void update(int value);
 
 //DESENHO DO GRID - CODIGOS FORNECIDOS PELO MONITOR DIEGO CINTRA
 /**
@@ -81,6 +119,12 @@ void initializeVertex(Vertex *v, GLfloat x, GLfloat y, GLfloat z);
 
 int main(int argc, char **argv){
 	
+	initializeVertex(&abCenter, 0.0f, 0.0f, 0.0f); //inicializacao de abCenter
+	initializeVertex(&cefaloCenter, 0.0f, 0.0f, (abRadius + cefaloRadius)); //inicializacao de cefaloCenter
+	spiderCenter = newVertex(0.0f, 0.0f, 0.0f);
+	spiderFrontDir = newVertex(0.0f, 0.0f, 1.0f);
+	origin = newVertex(0.0f, 0.0f, 0.0f);
+
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
 	glutInitWindowPosition(100, 100);
@@ -91,6 +135,9 @@ int main(int argc, char **argv){
 	
 	glutDisplayFunc(displayCallback);
 	glutReshapeFunc(reshapeCallback);
+
+	glutSpecialFunc(handle_SpecialFunc);
+	glutTimerFunc(25, update, 0);
 
 	
 	glutMainLoop();
@@ -186,298 +233,78 @@ void drawCefaloTorax(GLfloat center_x, GLfloat center_y, GLfloat center_z){
 	glPopMatrix();
 }
 
+void drawLeg(Vertex* d) {
+	Vertex v; // vertex to draw lines
+	Vertex i; // vertex that represent the vector to increment v
 
-void drawUpperLeftLeg(int linesQuantity) {
-	//PERNA ESQ
-	Vertex upperLeftBaseLeg;
-	Vertex upperLeftCotLeg;
-	Vertex upperLeftExtLeg;
-
-
-	//Leg base
-	upperLeftBaseLeg.x = cefaloCenter.x + (cefaloRadius * cos((45 * 2 * M_PI) / linesQuantity));
-	upperLeftBaseLeg.y = cefaloCenter.y + (cefaloRadius * sin((45 * 2 * M_PI) / linesQuantity));
-	upperLeftBaseLeg.z = cefaloCenter.z;
-
-	//Leg Cot
-	upperLeftCotLeg.x = cefaloCenter.x + 2.0f;
-	upperLeftCotLeg.y = cefaloCenter.y + 1.5f;
-	upperLeftCotLeg.z = cefaloCenter.z + 2.0f;
-
-	//Leg ext
-	upperLeftExtLeg.x = cefaloCenter.x + 2.0f + 1.0f;
-	upperLeftExtLeg.y = cefaloCenter.y - 1.0f;
-	upperLeftExtLeg.z = cefaloCenter.z + 2.0f;	
-
-	//glLineWidth(3);
 	glBegin(GL_LINE_STRIP);
 	
-	glColor3f(0.0f, 1.0f, 0.0f);
-	glVertex3f(upperLeftBaseLeg.x, upperLeftBaseLeg.y, upperLeftBaseLeg.z); //base 
-	glVertex3f(upperLeftCotLeg.x, upperLeftCotLeg.y, upperLeftCotLeg.z); //cotovelo
-	glVertex3f(upperLeftExtLeg.x, upperLeftExtLeg.y, upperLeftExtLeg.z); //extremidade
+		glColor3f(0.0f, 1.0f, 0.0f);
+
+		mulVertex(&i, d, cefaloRadius);
+		addVertexesv(&v, origin, &i);
+		glVertex3f(v.x, v.y, v.z);
+
+		addVertexes(&i, d, 0.0f, 1.0f, 0.0f);
+		mulVertex(&i, &i, cefaloRadius * 1.2);
+		addVertexesv(&v, &v, &i);
+		glVertex3f(v.x, v.y, v.z);
+
+		// mulVertex(&i, d, cefaloRadius * 2.0);
+		// addVertexesv(&v, &v, &i);
+		// glVertex3f(v.x, v.y, v.z);
+
+		addVertexes(&i, d, 0.0f, -1.0f, 0.0f);
+		mulVertex(&i, &i, cefaloRadius * 2.0);
+		addVertexesv(&v, &v, &i);
+		glVertex3f(v.x, v.y, v.z);	
+
 	glEnd();
+	
 }
 
 
-void drawUpperRightLeg(int linesQuantity) {
-	//PERNA DIR
-	Vertex upperRightBaseLeg;
-	Vertex upperRightCotLeg;
-	Vertex upperRightExtLeg;
+void drawLegs() {
 
 
-	//Leg base
-	upperRightBaseLeg.x = cefaloCenter.x + (cefaloRadius * cos((135 * 2 * M_PI) / linesQuantity));
-	upperRightBaseLeg.y = cefaloCenter.y + (cefaloRadius * sin((135 * 2 * M_PI) / linesQuantity));
-	upperRightBaseLeg.z = cefaloCenter.z;
+	glTranslatef(spiderCenter->x + cefaloCenter.x, spiderCenter->y + cefaloCenter.y, spiderCenter->z + cefaloCenter.z);
 
-	//Leg Cot
-	upperRightCotLeg.x = cefaloCenter.x - 2.0f;
-	upperRightCotLeg.y = cefaloCenter.y + 1.5f;
-	upperRightCotLeg.z = cefaloCenter.z + 2.0f;
+	glRotatef(45.0f, 0.0f, 1.0f, 0.0f);
+	drawLeg(spiderFrontDir);
+	glRotatef(30.0f, 0.0f, 1.0f, 0.0f);
+	drawLeg(spiderFrontDir);
+	glRotatef(30.0f, 0.0f, 1.0f, 0.0f);
+	drawLeg(spiderFrontDir);
+	glRotatef(30.0f, 0.0f, 1.0f, 0.0f);
+	drawLeg(spiderFrontDir);
 
-	//Leg ext
-	upperRightExtLeg.x = cefaloCenter.x - (2.0f + 1.0f);
-	upperRightExtLeg.y = cefaloCenter.y - 1.0f;
-	upperRightExtLeg.z = cefaloCenter.z + 2.0f;	
+	glRotatef(-135.0f, 0.0f, 1.0f, 0.0f);
 
-	//glLineWidth(3);
-	glBegin(GL_LINE_STRIP);
+	glRotatef(-45.0f, 0.0f, 1.0f, 0.0f);
+	drawLeg(spiderFrontDir);
+	glRotatef(-30.0f, 0.0f, 1.0f, 0.0f);
+	drawLeg(spiderFrontDir);
+	glRotatef(-30.0f, 0.0f, 1.0f, 0.0f);
+	drawLeg(spiderFrontDir);
+	glRotatef(-30.0f, 0.0f, 1.0f, 0.0f);
+	drawLeg(spiderFrontDir);
+
+	glRotatef(135.0f, 0.0f, 1.0f, 0.0f);
 	
-	glColor3f(0.0f, 1.0f, 0.0f);
-	glVertex3f(upperRightBaseLeg.x, upperRightBaseLeg.y, upperRightBaseLeg.z); //base 
-	glVertex3f(upperRightCotLeg.x, upperRightCotLeg.y, upperRightCotLeg.z); //cotovelo
-	glVertex3f(upperRightExtLeg.x, upperRightExtLeg.y, upperRightExtLeg.z); //extremidade
-	glEnd();
-}
-
-void drawBottomLeftLeg(int linesQuantity) {
-	//PERNA ESQ
-	Vertex bottomLeftBaseLeg;
-	Vertex bottomLeftCotLeg;
-	Vertex bottomLeftExtLeg;
-
-
-	//Leg base
-	bottomLeftBaseLeg.x = cefaloCenter.x + (cefaloRadius * cos((45 * 2 * M_PI) / linesQuantity));
-	bottomLeftBaseLeg.y = cefaloCenter.y + (cefaloRadius * sin((45 * 2 * M_PI) / linesQuantity));
-	bottomLeftBaseLeg.z = cefaloCenter.z - 1.0f;
-
-	//Leg Cot
-	bottomLeftCotLeg.x = cefaloCenter.x + 2.0f;
-	bottomLeftCotLeg.y = cefaloCenter.y + 1.5f;
-	bottomLeftCotLeg.z = cefaloCenter.z - 2.0f;
-
-	//Leg ext
-	bottomLeftExtLeg.x = cefaloCenter.x + 2.0f + 1.0f;
-	bottomLeftExtLeg.y = cefaloCenter.y - 1.0f;
-	bottomLeftExtLeg.z = cefaloCenter.z - 2.0f;	
-
-	//glLineWidth(3);
-	glBegin(GL_LINE_STRIP);
-	
-	glColor3f(0.0f, 1.0f, 0.0f);
-	glVertex3f(bottomLeftBaseLeg.x, bottomLeftBaseLeg.y, bottomLeftBaseLeg.z); //base 
-	glVertex3f(bottomLeftCotLeg.x, bottomLeftCotLeg.y, bottomLeftCotLeg.z); //cotovelo
-	glVertex3f(bottomLeftExtLeg.x, bottomLeftExtLeg.y, bottomLeftExtLeg.z); //extremidade
-	glEnd();
-}
-
-void drawBottomRightLeg(int linesQuantity) {
-	//PERNA DIR
-	Vertex bottomRightBaseLeg;
-	Vertex bottomRightCotLeg;
-	Vertex bottomRightExtLeg;
-
-
-	//Leg base
-	bottomRightBaseLeg.x = cefaloCenter.x + (cefaloRadius * cos((135 * 2 * M_PI) / linesQuantity));
-	bottomRightBaseLeg.y = cefaloCenter.y + (cefaloRadius * sin((135 * 2 * M_PI) / linesQuantity));
-	bottomRightBaseLeg.z = cefaloCenter.z - 1.0f;
-
-	//Leg Cot
-	bottomRightCotLeg.x = cefaloCenter.x - 2.0f;
-	bottomRightCotLeg.y = cefaloCenter.y + 1.5f;
-	bottomRightCotLeg.z = cefaloCenter.z - 2.0f;
-
-	//Leg ext
-	bottomRightExtLeg.x = cefaloCenter.x - (2.0f + 1.0f);
-	bottomRightExtLeg.y = cefaloCenter.y - 1.0f;
-	bottomRightExtLeg.z = cefaloCenter.z - 2.0f;	
-
-	//glLineWidth(3);
-	glBegin(GL_LINE_STRIP);
-	
-	glColor3f(0.0f, 1.0f, 0.0f);
-	glVertex3f(bottomRightBaseLeg.x, bottomRightBaseLeg.y, bottomRightBaseLeg.z); //base 
-	glVertex3f(bottomRightCotLeg.x, bottomRightCotLeg.y, bottomRightCotLeg.z); //cotovelo
-	glVertex3f(bottomRightExtLeg.x, bottomRightExtLeg.y, bottomRightExtLeg.z); //extremidade
-	glEnd();
-}
-
-void drawBottomMiddleLeftLeg(int linesQuantity) {
-	//PERNA ESQ
-	Vertex bottomMiddleLeftBaseLeg;
-	Vertex bottomMiddleLeftCotLeg;
-	Vertex bottomMiddleLeftExtLeg;
-
-
-	//Leg base
-	bottomMiddleLeftBaseLeg.x = cefaloCenter.x + (cefaloRadius * cos((45 * 2 * M_PI) / linesQuantity));
-	bottomMiddleLeftBaseLeg.y = cefaloCenter.y + (cefaloRadius * sin((45 * 2 * M_PI) / linesQuantity));
-	bottomMiddleLeftBaseLeg.z = cefaloCenter.z - 0.5f;
-
-	//Leg Cot
-	bottomMiddleLeftCotLeg.x = cefaloCenter.x + 2.0f;
-	bottomMiddleLeftCotLeg.y = cefaloCenter.y + 1.5f;
-	bottomMiddleLeftCotLeg.z = cefaloCenter.z - 1.5f;
-
-	//Leg ext
-	bottomMiddleLeftExtLeg.x = cefaloCenter.x + (2.0f + 1.0f);
-	bottomMiddleLeftExtLeg.y = cefaloCenter.y - 1.0f;
-	bottomMiddleLeftExtLeg.z = cefaloCenter.z - 1.5f;	
-
-	//glLineWidth(3);
-	glBegin(GL_LINE_STRIP);
-	
-	glColor3f(0.0f, 1.0f, 0.0f);
-	glVertex3f(bottomMiddleLeftBaseLeg.x, bottomMiddleLeftBaseLeg.y, bottomMiddleLeftBaseLeg.z); //base 
-	glVertex3f(bottomMiddleLeftCotLeg.x, bottomMiddleLeftCotLeg.y, bottomMiddleLeftCotLeg.z); //cotovelo
-	glVertex3f(bottomMiddleLeftExtLeg.x, bottomMiddleLeftExtLeg.y, bottomMiddleLeftExtLeg.z); //extremidade
-	glEnd();
-}
-
-void drawBottomMiddleRightLeg(int linesQuantity) {
-	//PERNA DIR
-	Vertex bottomMiddleRightBaseLeg;
-	Vertex bottomMiddleRightCotLeg;
-	Vertex bottomMiddleRightExtLeg;
-
-
-	//Leg base
-	bottomMiddleRightBaseLeg.x = cefaloCenter.x + (cefaloRadius * cos((135 * 2 * M_PI) / linesQuantity));
-	bottomMiddleRightBaseLeg.y = cefaloCenter.y + (cefaloRadius * sin((135 * 2 * M_PI) / linesQuantity));
-	bottomMiddleRightBaseLeg.z = cefaloCenter.z - 0.5f;
-
-	//Leg Cot
-	bottomMiddleRightCotLeg.x = cefaloCenter.x - 2.0f;
-	bottomMiddleRightCotLeg.y = cefaloCenter.y + 1.5f;
-	bottomMiddleRightCotLeg.z = cefaloCenter.z - 1.5f;
-
-	//Leg ext
-	bottomMiddleRightExtLeg.x = cefaloCenter.x - (2.0f + 1.0f);
-	bottomMiddleRightExtLeg.y = cefaloCenter.y - 1.0f;
-	bottomMiddleRightExtLeg.z = cefaloCenter.z - 1.5f;	
-
-	//glLineWidth(3);
-	glBegin(GL_LINE_STRIP);
-	
-	glColor3f(0.0f, 1.0f, 0.0f);
-	glVertex3f(bottomMiddleRightBaseLeg.x, bottomMiddleRightBaseLeg.y, bottomMiddleRightBaseLeg.z); //base 
-	glVertex3f(bottomMiddleRightCotLeg.x, bottomMiddleRightCotLeg.y, bottomMiddleRightCotLeg.z); //cotovelo
-	glVertex3f(bottomMiddleRightExtLeg.x, bottomMiddleRightExtLeg.y, bottomMiddleRightExtLeg.z); //extremidade
-	glEnd();
-}
-
-void drawUpperMiddleLeftLeg(int linesQuantity) {
-	//PERNA ESQ
-	Vertex upperMiddleLeftBaseLeg;
-	Vertex upperMiddleLeftCotLeg;
-	Vertex upperMiddleLeftExtLeg;
-
-
-	//Leg base
-	upperMiddleLeftBaseLeg.x = cefaloCenter.x + (cefaloRadius * cos((45 * 2 * M_PI) / linesQuantity));
-	upperMiddleLeftBaseLeg.y = cefaloCenter.y + (cefaloRadius * sin((45 * 2 * M_PI) / linesQuantity));
-	upperMiddleLeftBaseLeg.z = cefaloCenter.z - 0.25f;
-
-	//Leg Cot
-	upperMiddleLeftCotLeg.x = cefaloCenter.x + 2.0f;
-	upperMiddleLeftCotLeg.y = cefaloCenter.y + 1.5f;
-	upperMiddleLeftCotLeg.z = cefaloCenter.z - 0.5f;
-
-	//Leg ext
-	upperMiddleLeftExtLeg.x = cefaloCenter.x + (2.0f + 1.0f);
-	upperMiddleLeftExtLeg.y = cefaloCenter.y - 1.0f;
-	upperMiddleLeftExtLeg.z = cefaloCenter.z - 0.5f;	
-
-	//glLineWidth(3);
-	glPointSize(5);
-	glBegin(GL_LINE_STRIP);
-	
-	glColor3f(0.0f, 1.0f, 0.0f);
-	glVertex3f(upperMiddleLeftBaseLeg.x, upperMiddleLeftBaseLeg.y, upperMiddleLeftBaseLeg.z); //base 
-	glVertex3f(upperMiddleLeftCotLeg.x, upperMiddleLeftCotLeg.y, upperMiddleLeftCotLeg.z); //cotovelo
-	glVertex3f(upperMiddleLeftExtLeg.x, upperMiddleLeftExtLeg.y, upperMiddleLeftExtLeg.z); //extremidade
-	glEnd();
-}
-
-
-void drawUpperMiddleRightLeg(int linesQuantity) {
-	//PERNA DIR
-	Vertex upperMiddleRightBaseLeg;
-	Vertex upperMiddleRightCotLeg;
-	Vertex upperMiddleRightExtLeg;
-
-
-	//Leg base
-	upperMiddleRightBaseLeg.x = cefaloCenter.x + (cefaloRadius * cos((135 * 2 * M_PI) / linesQuantity));
-	upperMiddleRightBaseLeg.y = cefaloCenter.y + (cefaloRadius * sin((135 * 2 * M_PI) / linesQuantity));
-	upperMiddleRightBaseLeg.z = cefaloCenter.z - 0.25f;
-
-	//Leg Cot
-	upperMiddleRightCotLeg.x = cefaloCenter.x - 2.0f;
-	upperMiddleRightCotLeg.y = cefaloCenter.y + 1.5f;
-	upperMiddleRightCotLeg.z = cefaloCenter.z - 0.5f;
-
-	//Leg ext
-	upperMiddleRightExtLeg.x = cefaloCenter.x - (2.0f + 1.0f);
-	upperMiddleRightExtLeg.y = cefaloCenter.y - 1.0f;
-	upperMiddleRightExtLeg.z = cefaloCenter.z - 0.5f;	
-
-	//glLineWidth(3);
-	glPointSize(5);
-	glBegin(GL_LINE_STRIP);
-	
-	glColor3f(0.0f, 1.0f, 0.0f);
-	glVertex3f(upperMiddleRightBaseLeg.x, upperMiddleRightBaseLeg.y, upperMiddleRightBaseLeg.z); //base 
-	glVertex3f(upperMiddleRightCotLeg.x, upperMiddleRightCotLeg.y, upperMiddleRightCotLeg.z); //cotovelo
-	glVertex3f(upperMiddleRightExtLeg.x, upperMiddleRightExtLeg.y, upperMiddleRightExtLeg.z); //extremidade
-	glEnd();
-}
-
-
-void drawLegs(int linesQuantity) {
-
-	//rotateInPlace(cefaloCenterX, cefaloCenterY, legRotation*legState); //comentei pq n sei oq  faz
-
-	drawUpperRightLeg(linesQuantity);
-	drawUpperLeftLeg(linesQuantity);
-	drawBottomMiddleLeftLeg(linesQuantity);
-	drawBottomMiddleRightLeg(linesQuantity);
-
-	//rotateInPlace(cefaloCenterX, cefaloCenterY, -legRotation * legState); //comentei pq n sei oq faz
-
-	//rotateInPlace(cefaloCenterX, cefaloCenterY, -legRotation * legState); //comentei pq n sei oq faz
-
-	drawBottomLeftLeg(linesQuantity);
-	drawBottomRightLeg(linesQuantity);
-	drawUpperMiddleLeftLeg(linesQuantity);
-	drawUpperMiddleRightLeg(linesQuantity);
-
-//	rotateInPlace(cefaloCenterX, cefaloCenterY, legRotation*legState);
-
+	glTranslatef(-(spiderCenter->x + cefaloCenter.x), -(spiderCenter->y + cefaloCenter.y), -(spiderCenter->z + cefaloCenter.z));
 }
 
 void drawSpider(){
-	initializeVertex(&abCenter, 0.0f, 0.0f, 0.0f); //inicializacao de abCenter
-	initializeVertex(&cefaloCenter, 0.0f, 0.0f, (abRadius + cefaloRadius)); //inicializacao de cefaloCenter
+	
+	drawAbdomen(spiderCenter -> x + abCenter.x,
+				spiderCenter -> y + abCenter.y,
+				spiderCenter -> z + abCenter.z);
 
-
-	drawAbdomen(abCenter.x, abCenter.y, abCenter.z);
-	drawCefaloTorax(cefaloCenter.x, cefaloCenter.y, cefaloCenter.z);
-	drawLegs(360);
+	drawCefaloTorax(spiderCenter -> x + cefaloCenter.x,
+					spiderCenter -> y + cefaloCenter.y,
+					spiderCenter -> z + cefaloCenter.z);
+	
+	drawLegs();
 	
 }
 
@@ -489,7 +316,9 @@ void displayCallback(){
 	
 	//bottom left viewport - free view
 	glLoadIdentity();
-	gluLookAt(3.0, 2.0, 10.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
+	gluLookAt(spiderCenter -> x + 3.0, spiderCenter -> y + 2.0, spiderCenter -> z + 10.0,
+				spiderCenter -> x, spiderCenter -> y, spiderCenter -> z,
+				0.0, 1.0, 0.0);
 	glViewport(0, 0, width/2, height/2);
 	drawGrid(100.0, 1.0);
 	drawWCAxes();
@@ -498,7 +327,9 @@ void displayCallback(){
 	
 	//bottom right viewport - z-axis view
 	glLoadIdentity();
-	gluLookAt(0.0, 0.0, 10.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
+	gluLookAt(spiderCenter -> x + 0.0, spiderCenter -> y + 0.0, spiderCenter -> z + 10.0,
+				spiderCenter -> x, spiderCenter -> y, spiderCenter -> z,
+				0.0, 1.0, 0.0);
 	glViewport(width/2, 0, width/2, height/2);
 	drawGrid(100.0, 1.0);
 	drawWCAxes();
@@ -506,7 +337,9 @@ void displayCallback(){
 
 	//u left viewport - y-axis view
 	glLoadIdentity();
-	gluLookAt(0.0, 10.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0);
+	gluLookAt(spiderCenter -> x + 0.0, spiderCenter -> y + 10.0, spiderCenter -> z + 0.0,
+				spiderCenter -> x, spiderCenter -> y, spiderCenter -> z,
+				0.0, 0.0, 1.0); // up vector becomes k
 	glViewport(0, height/2, width/2, height/2);
 	drawGrid(100.0, 1.0);
 	drawWCAxes();
@@ -515,7 +348,9 @@ void displayCallback(){
 	
 	//top right viewport - x-axis view
 	glLoadIdentity();
-	gluLookAt(10.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0);
+	gluLookAt(spiderCenter -> x + 10.0, spiderCenter -> y + 0.0, spiderCenter -> z + 0.0,
+				spiderCenter -> x, spiderCenter -> y, spiderCenter -> z,
+				0.0, 1.0, 0.0);
 	glViewport(width/2, height/2, width/2, height/2);
 	drawGrid(100.0, 1.0);
 	drawWCAxes();
@@ -538,4 +373,43 @@ void reshapeCallback(int w, int h){
 	glLoadIdentity();
 	gluPerspective(80.0, (GLfloat) width/(GLfloat) height, 1.0, 20.0);
 	glMatrixMode(GL_MODELVIEW);
+}
+
+void update(int value) {
+
+	switch (ACTIVE_KEY) {
+		case GLUT_KEY_LEFT:
+			addVertexes(spiderCenter, spiderCenter, STEP_SIZE, 0.0f, 0.0f);
+			break;
+		case GLUT_KEY_UP:
+			addVertexes(spiderCenter, spiderCenter, 0.0f, 0.0f, STEP_SIZE);
+			break;
+		case GLUT_KEY_RIGHT:
+			addVertexes(spiderCenter, spiderCenter, -STEP_SIZE, 0.0f, 0.0f);
+			break;
+		case GLUT_KEY_DOWN:
+			addVertexes(spiderCenter, spiderCenter, 0.0f, 0.0f, -STEP_SIZE);
+			break;
+	}
+	ACTIVE_KEY = 0;
+
+	glutPostRedisplay();
+	glutTimerFunc(10, update, 0);
+}
+
+void handle_SpecialFunc(GLint key, GLint x, GLint y){
+	switch (key) {
+		case GLUT_KEY_LEFT:
+			ACTIVE_KEY = key;
+			break;
+		case GLUT_KEY_UP:
+			ACTIVE_KEY = key;
+			break;
+		case GLUT_KEY_RIGHT:
+			ACTIVE_KEY = key;
+			break;
+		case GLUT_KEY_DOWN:
+			ACTIVE_KEY = key;
+			break;
+	}
 }
