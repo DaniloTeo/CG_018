@@ -18,6 +18,8 @@ const int cefaloSlices = 20;
 
 const GLfloat STEP_SIZE = 0.5f;
 
+const int REFRESH_DELAY = 200;
+
 
 typedef struct vertex{
 	GLfloat x;
@@ -59,7 +61,7 @@ void addVertexes(Vertex* v, Vertex* a, GLfloat x, GLfloat y, GLfloat z) {
  * funcao para multiplicar vertexes por escalares mais rapido
  * v recebe vertex a multiplicado pelo escalar b
  */
-void mulVertex(Vertex* v, Vertex* a, int b) {
+void mulVertex(Vertex* v, Vertex* a, float b) {
     v -> x = a -> x * b;
     v -> y = a -> y * b;
     v -> z = a -> z * b;
@@ -71,6 +73,8 @@ Vertex* spiderCenter;
 Vertex* spiderFrontDir;
 Vertex* origin;
 GLint ACTIVE_KEY;
+GLint LAST_KEY;
+int STATE;
 
 
 
@@ -124,6 +128,7 @@ int main(int argc, char **argv){
 	spiderCenter = newVertex(0.0f, 0.0f, 0.0f);
 	spiderFrontDir = newVertex(0.0f, 0.0f, 1.0f);
 	origin = newVertex(0.0f, 0.0f, 0.0f);
+	STATE = 0;
 
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
@@ -137,7 +142,7 @@ int main(int argc, char **argv){
 	glutReshapeFunc(reshapeCallback);
 
 	glutSpecialFunc(handle_SpecialFunc);
-	glutTimerFunc(25, update, 0);
+	glutTimerFunc(REFRESH_DELAY, update, 0);
 
 	
 	glutMainLoop();
@@ -233,7 +238,7 @@ void drawCefaloTorax(GLfloat center_x, GLfloat center_y, GLfloat center_z){
 	glPopMatrix();
 }
 
-void drawLeg(Vertex* d) {
+void drawContractedLeg(Vertex* d) {
 	Vertex v; // vertex to draw lines
 	Vertex i; // vertex that represent the vector to increment v
 
@@ -246,7 +251,7 @@ void drawLeg(Vertex* d) {
 		glVertex3f(v.x, v.y, v.z);
 
 		addVertexes(&i, d, 0.0f, 1.0f, 0.0f);
-		mulVertex(&i, &i, cefaloRadius * 1.2);
+		mulVertex(&i, &i, cefaloRadius);
 		addVertexesv(&v, &v, &i);
 		glVertex3f(v.x, v.y, v.z);
 
@@ -255,7 +260,7 @@ void drawLeg(Vertex* d) {
 		// glVertex3f(v.x, v.y, v.z);
 
 		addVertexes(&i, d, 0.0f, -1.0f, 0.0f);
-		mulVertex(&i, &i, cefaloRadius * 2.0);
+		mulVertex(&i, &i, cefaloRadius * 2);
 		addVertexesv(&v, &v, &i);
 		glVertex3f(v.x, v.y, v.z);	
 
@@ -263,31 +268,112 @@ void drawLeg(Vertex* d) {
 	
 }
 
+void drawExtendedLeg(Vertex* d) {
+	Vertex v; // vertex to draw lines
+	Vertex i; // vertex that represent the vector to increment v
 
-void drawLegs() {
+	glBegin(GL_LINE_STRIP);
+	
+		glColor3f(0.0f, 1.0f, 0.0f);
+
+		mulVertex(&i, d, cefaloRadius);
+		addVertexesv(&v, origin, &i);
+		glVertex3f(v.x, v.y, v.z);
+
+		mulVertex(&i, d, 4.0);
+		addVertexes(&v, &i, 0.0f, -1.0f, 0.0f);
+		glVertex3f(v.x, v.y, v.z);
+
+
+	glEnd();
+	
+}
+
+
+void drawLegs0() {
 
 
 	glTranslatef(spiderCenter->x + cefaloCenter.x, spiderCenter->y + cefaloCenter.y, spiderCenter->z + cefaloCenter.z);
 
 	glRotatef(45.0f, 0.0f, 1.0f, 0.0f);
-	drawLeg(spiderFrontDir);
+	drawContractedLeg(spiderFrontDir);
 	glRotatef(30.0f, 0.0f, 1.0f, 0.0f);
-	drawLeg(spiderFrontDir);
+	drawContractedLeg(spiderFrontDir);
 	glRotatef(30.0f, 0.0f, 1.0f, 0.0f);
-	drawLeg(spiderFrontDir);
+	drawContractedLeg(spiderFrontDir);
 	glRotatef(30.0f, 0.0f, 1.0f, 0.0f);
-	drawLeg(spiderFrontDir);
+	drawContractedLeg(spiderFrontDir);
 
 	glRotatef(-135.0f, 0.0f, 1.0f, 0.0f);
 
 	glRotatef(-45.0f, 0.0f, 1.0f, 0.0f);
-	drawLeg(spiderFrontDir);
+	drawContractedLeg(spiderFrontDir);
 	glRotatef(-30.0f, 0.0f, 1.0f, 0.0f);
-	drawLeg(spiderFrontDir);
+	drawContractedLeg(spiderFrontDir);
 	glRotatef(-30.0f, 0.0f, 1.0f, 0.0f);
-	drawLeg(spiderFrontDir);
+	drawContractedLeg(spiderFrontDir);
 	glRotatef(-30.0f, 0.0f, 1.0f, 0.0f);
-	drawLeg(spiderFrontDir);
+	drawContractedLeg(spiderFrontDir);
+
+	glRotatef(135.0f, 0.0f, 1.0f, 0.0f);
+	
+	glTranslatef(-(spiderCenter->x + cefaloCenter.x), -(spiderCenter->y + cefaloCenter.y), -(spiderCenter->z + cefaloCenter.z));
+}
+
+void drawLegs1() {
+
+
+	glTranslatef(spiderCenter->x + cefaloCenter.x, spiderCenter->y + cefaloCenter.y, spiderCenter->z + cefaloCenter.z);
+
+	glRotatef(45.0f, 0.0f, 1.0f, 0.0f);
+	drawExtendedLeg(spiderFrontDir);
+	glRotatef(40.0f, 0.0f, 1.0f, 0.0f);
+	drawContractedLeg(spiderFrontDir);
+	glRotatef(10.0f, 0.0f, 1.0f, 0.0f);
+	drawContractedLeg(spiderFrontDir);
+	glRotatef(40.0f, 0.0f, 1.0f, 0.0f);
+	drawExtendedLeg(spiderFrontDir);
+
+	glRotatef(-135.0f, 0.0f, 1.0f, 0.0f);
+
+	glRotatef(-45.0f, 0.0f, 1.0f, 0.0f);
+	drawContractedLeg(spiderFrontDir);
+	glRotatef(-30.0f, 0.0f, 1.0f, 0.0f);
+	drawContractedLeg(spiderFrontDir);
+	glRotatef(-30.0f, 0.0f, 1.0f, 0.0f);
+	drawContractedLeg(spiderFrontDir);
+	glRotatef(-30.0f, 0.0f, 1.0f, 0.0f);
+	drawContractedLeg(spiderFrontDir);
+
+	glRotatef(135.0f, 0.0f, 1.0f, 0.0f);
+	
+	glTranslatef(-(spiderCenter->x + cefaloCenter.x), -(spiderCenter->y + cefaloCenter.y), -(spiderCenter->z + cefaloCenter.z));
+}
+
+void drawLegs2() {
+
+
+	glTranslatef(spiderCenter->x + cefaloCenter.x, spiderCenter->y + cefaloCenter.y, spiderCenter->z + cefaloCenter.z);
+
+	glRotatef(45.0f, 0.0f, 1.0f, 0.0f);
+	drawContractedLeg(spiderFrontDir);
+	glRotatef(30.0f, 0.0f, 1.0f, 0.0f);
+	drawContractedLeg(spiderFrontDir);
+	glRotatef(30.0f, 0.0f, 1.0f, 0.0f);
+	drawContractedLeg(spiderFrontDir);
+	glRotatef(30.0f, 0.0f, 1.0f, 0.0f);
+	drawContractedLeg(spiderFrontDir);
+
+	glRotatef(-135.0f, 0.0f, 1.0f, 0.0f);
+
+	glRotatef(-45.0f, 0.0f, 1.0f, 0.0f);
+	drawExtendedLeg(spiderFrontDir);
+	glRotatef(-40.0f, 0.0f, 1.0f, 0.0f);
+	drawContractedLeg(spiderFrontDir);
+	glRotatef(-10.0f, 0.0f, 1.0f, 0.0f);
+	drawContractedLeg(spiderFrontDir);
+	glRotatef(-40.0f, 0.0f, 1.0f, 0.0f);
+	drawExtendedLeg(spiderFrontDir);
 
 	glRotatef(135.0f, 0.0f, 1.0f, 0.0f);
 	
@@ -304,7 +390,18 @@ void drawSpider(){
 					spiderCenter -> y + cefaloCenter.y,
 					spiderCenter -> z + cefaloCenter.z);
 	
-	drawLegs();
+	switch(STATE) {
+		case 0:
+			drawLegs0();
+			break;
+		case 1:
+			drawLegs1();
+			break;
+		case 2:
+			drawLegs2();
+			break;
+		
+	}
 	
 }
 
@@ -375,41 +472,66 @@ void reshapeCallback(int w, int h){
 	glMatrixMode(GL_MODELVIEW);
 }
 
+int isArrowKey(GLint key) {
+	return key == GLUT_KEY_LEFT || key == GLUT_KEY_UP || key == GLUT_KEY_RIGHT || key == GLUT_KEY_DOWN;
+}
+
 void update(int value) {
 
+	
 	switch (ACTIVE_KEY) {
 		case GLUT_KEY_LEFT:
 			addVertexes(spiderCenter, spiderCenter, STEP_SIZE, 0.0f, 0.0f);
+			STATE += 1;
 			break;
 		case GLUT_KEY_UP:
 			addVertexes(spiderCenter, spiderCenter, 0.0f, 0.0f, STEP_SIZE);
+			STATE += 1;
 			break;
 		case GLUT_KEY_RIGHT:
 			addVertexes(spiderCenter, spiderCenter, -STEP_SIZE, 0.0f, 0.0f);
+			STATE += 1;
 			break;
 		case GLUT_KEY_DOWN:
 			addVertexes(spiderCenter, spiderCenter, 0.0f, 0.0f, -STEP_SIZE);
+			STATE += 1;
 			break;
 	}
-	ACTIVE_KEY = 0;
+	if (STATE == 3)
+		if (isArrowKey(LAST_KEY)) {
+			ACTIVE_KEY = LAST_KEY;
+			STATE = 1;			
+		}	
+		else
+			STATE = 0;
+			
+	LAST_KEY = 0;
+	
+	if (STATE == 0)
+		ACTIVE_KEY = 0;
 
 	glutPostRedisplay();
-	glutTimerFunc(10, update, 0);
+	glutTimerFunc(REFRESH_DELAY, update, 0);
 }
 
 void handle_SpecialFunc(GLint key, GLint x, GLint y){
-	switch (key) {
-		case GLUT_KEY_LEFT:
-			ACTIVE_KEY = key;
-			break;
-		case GLUT_KEY_UP:
-			ACTIVE_KEY = key;
-			break;
-		case GLUT_KEY_RIGHT:
-			ACTIVE_KEY = key;
-			break;
-		case GLUT_KEY_DOWN:
-			ACTIVE_KEY = key;
-			break;
+
+	LAST_KEY = key;
+
+	if (STATE == 0) { // lock ACTIVE_KEY while spider is moving
+		switch (key) {
+			case GLUT_KEY_LEFT:
+				ACTIVE_KEY = key;
+				break;
+			case GLUT_KEY_UP:
+				ACTIVE_KEY = key;
+				break;
+			case GLUT_KEY_RIGHT:
+				ACTIVE_KEY = key;
+				break;
+			case GLUT_KEY_DOWN:
+				ACTIVE_KEY = key;
+				break;
+		}
 	}
 }
