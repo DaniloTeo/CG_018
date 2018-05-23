@@ -74,6 +74,7 @@ Vertex* spiderFrontDir;
 Vertex* origin;
 GLint ACTIVE_KEY;
 GLint LAST_KEY;
+GLfloat ROT; //clockwise!
 int STATE;
 
 
@@ -123,12 +124,13 @@ void initializeVertex(Vertex *v, GLfloat x, GLfloat y, GLfloat z);
 
 int main(int argc, char **argv){
 	
-	initializeVertex(&abCenter, 0.0f, 0.0f, 0.0f); //inicializacao de abCenter
-	initializeVertex(&cefaloCenter, 0.0f, 0.0f, (abRadius + cefaloRadius)); //inicializacao de cefaloCenter
-	spiderCenter = newVertex(0.0f, 0.0f, 0.0f);
+	initializeVertex(&abCenter, 0.0f, 0.0f, -(abRadius + cefaloRadius)); //inicializacao de abCenter
+	initializeVertex(&cefaloCenter, 0.0f, 0.0f, 0.0f); //inicializacao de cefaloCenter
+	spiderCenter = newVertex(0.0f, 0.0f, (abRadius + cefaloRadius));
 	spiderFrontDir = newVertex(0.0f, 0.0f, 1.0f);
 	origin = newVertex(0.0f, 0.0f, 0.0f);
 	STATE = 0;
+	ROT = 0.0f;
 
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
@@ -292,9 +294,6 @@ void drawExtendedLeg(Vertex* d) {
 
 void drawLegs0() {
 
-
-	glTranslatef(spiderCenter->x + cefaloCenter.x, spiderCenter->y + cefaloCenter.y, spiderCenter->z + cefaloCenter.z);
-
 	glRotatef(45.0f, 0.0f, 1.0f, 0.0f);
 	drawContractedLeg(spiderFrontDir);
 	glRotatef(30.0f, 0.0f, 1.0f, 0.0f);
@@ -315,15 +314,10 @@ void drawLegs0() {
 	glRotatef(-30.0f, 0.0f, 1.0f, 0.0f);
 	drawContractedLeg(spiderFrontDir);
 
-	glRotatef(135.0f, 0.0f, 1.0f, 0.0f);
-	
-	glTranslatef(-(spiderCenter->x + cefaloCenter.x), -(spiderCenter->y + cefaloCenter.y), -(spiderCenter->z + cefaloCenter.z));
+	glRotatef(135.0f, 0.0f, 1.0f, 0.0f);		
 }
 
 void drawLegs1() {
-
-
-	glTranslatef(spiderCenter->x + cefaloCenter.x, spiderCenter->y + cefaloCenter.y, spiderCenter->z + cefaloCenter.z);
 
 	glRotatef(45.0f, 0.0f, 1.0f, 0.0f);
 	drawExtendedLeg(spiderFrontDir);
@@ -346,14 +340,9 @@ void drawLegs1() {
 	drawContractedLeg(spiderFrontDir);
 
 	glRotatef(135.0f, 0.0f, 1.0f, 0.0f);
-	
-	glTranslatef(-(spiderCenter->x + cefaloCenter.x), -(spiderCenter->y + cefaloCenter.y), -(spiderCenter->z + cefaloCenter.z));
 }
 
 void drawLegs2() {
-
-
-	glTranslatef(spiderCenter->x + cefaloCenter.x, spiderCenter->y + cefaloCenter.y, spiderCenter->z + cefaloCenter.z);
 
 	glRotatef(45.0f, 0.0f, 1.0f, 0.0f);
 	drawContractedLeg(spiderFrontDir);
@@ -376,20 +365,19 @@ void drawLegs2() {
 	drawExtendedLeg(spiderFrontDir);
 
 	glRotatef(135.0f, 0.0f, 1.0f, 0.0f);
-	
-	glTranslatef(-(spiderCenter->x + cefaloCenter.x), -(spiderCenter->y + cefaloCenter.y), -(spiderCenter->z + cefaloCenter.z));
 }
 
 void drawSpider(){
 	
-	drawAbdomen(spiderCenter -> x + abCenter.x,
-				spiderCenter -> y + abCenter.y,
-				spiderCenter -> z + abCenter.z);
+	glTranslatef(spiderCenter->x, spiderCenter->y, spiderCenter->z);
+	glRotatef(-ROT, 0.0f, 1.0f, 0.0f);
 
-	drawCefaloTorax(spiderCenter -> x + cefaloCenter.x,
-					spiderCenter -> y + cefaloCenter.y,
-					spiderCenter -> z + cefaloCenter.z);
+	glTranslatef(abCenter.x, abCenter.y, abCenter.z);
+	drawAbdomen(0.0f, 0.0f, 0.0f);
+	glTranslatef(-(abCenter.x), -(abCenter.y), -(abCenter.z));
 	
+	drawCefaloTorax(0.0f, 0.0f, 0.0f);
+
 	switch(STATE) {
 		case 0:
 			drawLegs0();
@@ -403,18 +391,29 @@ void drawSpider(){
 		
 	}
 	
+
+	glRotatef(ROT, 0.0f, 1.0f, 0.0f);
+	glTranslatef(-(spiderCenter->x), -(spiderCenter->y), -(spiderCenter->z));
 }
 
 void displayCallback(){
 	/** Limpa a janela APENAS uma vez */
 	glClear(GL_COLOR_BUFFER_BIT);
 
+	Vertex abPos; // center of the view
+	Vertex v; // eye pos
+	// addVertexes(&abPos, spiderCenter,
+	// 			cos(M_PI * -ROT / 180.0) * abCenter.x + sin(M_PI * -ROT / 180.0) * abCenter.z,
+	// 			abCenter.y,
+	// 			-sin(M_PI * -ROT / 180.0) * abCenter.x + cos(M_PI * -ROT / 180.0) * abCenter.z);
+	addVertexesv(&abPos, spiderCenter, &abCenter);
 	
 	
 	//bottom left viewport - free view
 	glLoadIdentity();
-	gluLookAt(spiderCenter -> x + 3.0, spiderCenter -> y + 2.0, spiderCenter -> z + 10.0,
-				spiderCenter -> x, spiderCenter -> y, spiderCenter -> z,
+	addVertexes(&v, &abPos, 3.0, 2.0, 10.0);
+	gluLookAt(v.x, v.y, v.z,
+				abPos.x, abPos.y, abPos.z,
 				0.0, 1.0, 0.0);
 	glViewport(0, 0, width/2, height/2);
 	drawGrid(100.0, 1.0);
@@ -424,8 +423,9 @@ void displayCallback(){
 	
 	//bottom right viewport - z-axis view
 	glLoadIdentity();
-	gluLookAt(spiderCenter -> x + 0.0, spiderCenter -> y + 0.0, spiderCenter -> z + 10.0,
-				spiderCenter -> x, spiderCenter -> y, spiderCenter -> z,
+	addVertexes(&v, &abPos, 0.0, 0.0, 10.0);
+	gluLookAt(v.x, v.y, v.z,
+				abPos.x, abPos.y, abPos.z,
 				0.0, 1.0, 0.0);
 	glViewport(width/2, 0, width/2, height/2);
 	drawGrid(100.0, 1.0);
@@ -434,8 +434,9 @@ void displayCallback(){
 
 	//u left viewport - y-axis view
 	glLoadIdentity();
-	gluLookAt(spiderCenter -> x + 0.0, spiderCenter -> y + 10.0, spiderCenter -> z + 0.0,
-				spiderCenter -> x, spiderCenter -> y, spiderCenter -> z,
+	addVertexes(&v, &abPos, 0.0, 10.0, 0.0);
+	gluLookAt(v.x, v.y, v.z,
+				abPos.x, abPos.y, abPos.z,
 				0.0, 0.0, 1.0); // up vector becomes k
 	glViewport(0, height/2, width/2, height/2);
 	drawGrid(100.0, 1.0);
@@ -445,8 +446,9 @@ void displayCallback(){
 	
 	//top right viewport - x-axis view
 	glLoadIdentity();
-	gluLookAt(spiderCenter -> x + 10.0, spiderCenter -> y + 0.0, spiderCenter -> z + 0.0,
-				spiderCenter -> x, spiderCenter -> y, spiderCenter -> z,
+	addVertexes(&v, &abPos, 10.0, 0.0, 0.0);
+	gluLookAt(v.x, v.y, v.z,
+				abPos.x, abPos.y, abPos.z,
 				0.0, 1.0, 0.0);
 	glViewport(width/2, height/2, width/2, height/2);
 	drawGrid(100.0, 1.0);
@@ -482,18 +484,22 @@ void update(int value) {
 	switch (ACTIVE_KEY) {
 		case GLUT_KEY_LEFT:
 			addVertexes(spiderCenter, spiderCenter, STEP_SIZE, 0.0f, 0.0f);
+			ROT = -90.0f;
 			STATE += 1;
 			break;
 		case GLUT_KEY_UP:
 			addVertexes(spiderCenter, spiderCenter, 0.0f, 0.0f, STEP_SIZE);
+			ROT = 0.0f;
 			STATE += 1;
 			break;
 		case GLUT_KEY_RIGHT:
 			addVertexes(spiderCenter, spiderCenter, -STEP_SIZE, 0.0f, 0.0f);
+			ROT = 90.0f;
 			STATE += 1;
 			break;
 		case GLUT_KEY_DOWN:
 			addVertexes(spiderCenter, spiderCenter, 0.0f, 0.0f, -STEP_SIZE);
+			ROT = 180.0f;
 			STATE += 1;
 			break;
 	}
