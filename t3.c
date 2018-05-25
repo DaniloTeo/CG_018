@@ -8,6 +8,10 @@
 int width = 800;
 int height = 800;
 
+
+int view_width = 800;
+int view_height = 800;
+
 const GLfloat abRadius = 2.0f;
 const int abStacks = 20;
 const int abSlices = 20;
@@ -415,22 +419,22 @@ void displayCallback(){
 	gluLookAt(v.x, v.y, v.z,
 				abPos.x, abPos.y, abPos.z,
 				0.0, 1.0, 0.0);
-	glViewport(0, 0, width/2, height/2);
+	glViewport(0, 0, view_width/2, view_height);
 	drawGrid(100.0, 1.0);
 	drawWCAxes();
 	drawSpider();
 
 	
-	//bottom right viewport - z-axis view
-	glLoadIdentity();
-	addVertexes(&v, &abPos, 0.0, 0.0, 10.0);
-	gluLookAt(v.x, v.y, v.z,
-				abPos.x, abPos.y, abPos.z,
-				0.0, 1.0, 0.0);
-	glViewport(width/2, 0, width/2, height/2);
-	drawGrid(100.0, 1.0);
-	drawWCAxes();
-	drawSpider();
+	// //bottom right viewport - z-axis view
+	// glLoadIdentity();
+	// addVertexes(&v, &abPos, 0.0, 0.0, 10.0);
+	// gluLookAt(v.x, v.y, v.z,
+	// 			abPos.x, abPos.y, abPos.z,
+	// 			0.0, 1.0, 0.0);
+	// glViewport(width/2, 0, width/2, height/2);
+	// drawGrid(100.0, 1.0);
+	// drawWCAxes();
+	// drawSpider();
 
 	//u left viewport - y-axis view
 	glLoadIdentity();
@@ -438,22 +442,22 @@ void displayCallback(){
 	gluLookAt(v.x, v.y, v.z,
 				abPos.x, abPos.y, abPos.z,
 				0.0, 0.0, 1.0); // up vector becomes k
-	glViewport(0, height/2, width/2, height/2);
+	glViewport(width/2, 0, view_width/2, view_height);
 	drawGrid(100.0, 1.0);
 	drawWCAxes();
 	drawSpider();
 	
 	
-	//top right viewport - x-axis view
-	glLoadIdentity();
-	addVertexes(&v, &abPos, 10.0, 0.0, 0.0);
-	gluLookAt(v.x, v.y, v.z,
-				abPos.x, abPos.y, abPos.z,
-				0.0, 1.0, 0.0);
-	glViewport(width/2, height/2, width/2, height/2);
-	drawGrid(100.0, 1.0);
-	drawWCAxes();
-	drawSpider();
+	// //top right viewport - x-axis view
+	// glLoadIdentity();
+	// addVertexes(&v, &abPos, 10.0, 0.0, 0.0);
+	// gluLookAt(v.x, v.y, v.z,
+	// 			abPos.x, abPos.y, abPos.z,
+	// 			0.0, 1.0, 0.0);
+	// glViewport(width/2, height/2, width/2, height/2);
+	// drawGrid(100.0, 1.0);
+	// drawWCAxes();
+	// drawSpider();
 
 
 	

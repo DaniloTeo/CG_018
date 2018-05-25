@@ -1,10 +1,10 @@
 all:
-	gcc -o t2 -g t2.c -lm -lglut -lGLU -lGL
-	./t2
+	gcc -o t3 -g t3.c -lm -lglut -lGLU -lGL
+	./t3
 run:
-	./t2
+	./t3
 valgrind:
-	gcc -o t2 -g t2.c -lm -lglut -lGLU -lGL
-	valgrind --tool=memcheck --leak-check=full ./t2
+	gcc -o t3 -g t3.c -lm -lglut -lGLU -lGL
+	valgrind --tool=memcheck --leak-check=full ./t3
 clean:
-	rm t2
+	rm t3
