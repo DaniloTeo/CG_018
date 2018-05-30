@@ -67,6 +67,13 @@ void mulVertex(Vertex* v, Vertex* a, float b) {
     v -> z = a -> z * b;
 }
 
+void rotateVertexOnY(Vertex* v, Vertex* a, float b) {
+	GLfloat aux_x = a -> x;
+    v -> x =  cos(M_PI * -b / 180.0) * aux_x + sin(M_PI * -b / 180.0) * a -> z;
+    v -> y = a -> y;
+    v -> z = -sin(M_PI * -b / 180.0) * aux_x + cos(M_PI * -b / 180.0) * a -> z;
+}
+
 Vertex cefaloCenter;
 Vertex abCenter;
 Vertex* spiderCenter;
@@ -479,27 +486,35 @@ int isArrowKey(GLint key) {
 }
 
 void update(int value) {
-
+	Vertex v;
 	
 	switch (ACTIVE_KEY) {
 		case GLUT_KEY_LEFT:
-			addVertexes(spiderCenter, spiderCenter, STEP_SIZE, 0.0f, 0.0f);
-			ROT = -90.0f;
-			STATE += 1;
+			// addVertexes(spiderCenter, spiderCenter, STEP_SIZE, 0.0f, 0.0f);
+			ROT += -45.0f;
+			STATE = 0;
 			break;
 		case GLUT_KEY_UP:
-			addVertexes(spiderCenter, spiderCenter, 0.0f, 0.0f, STEP_SIZE);
-			ROT = 0.0f;
+
+			initializeVertex(&v, 0.0f, 0.0f, STEP_SIZE);
+			rotateVertexOnY(&v, &v, ROT);
+			// printf("%f, %f\n", v.x, v.z);
+			addVertexesv(spiderCenter, spiderCenter, &v);
+			// ROT = 0.0f;
 			STATE += 1;
 			break;
 		case GLUT_KEY_RIGHT:
-			addVertexes(spiderCenter, spiderCenter, -STEP_SIZE, 0.0f, 0.0f);
-			ROT = 90.0f;
-			STATE += 1;
+			// addVertexes(spiderCenter, spiderCenter, -STEP_SIZE, 0.0f, 0.0f);
+			ROT += 45.0f;
+			STATE  = 0;
 			break;
 		case GLUT_KEY_DOWN:
-			addVertexes(spiderCenter, spiderCenter, 0.0f, 0.0f, -STEP_SIZE);
-			ROT = 180.0f;
+			
+			initializeVertex(&v, 0.0f, 0.0f, -STEP_SIZE);
+			rotateVertexOnY(&v, &v, ROT);
+			// printf("%f, %f\n", v.x, v.z);
+			addVertexesv(spiderCenter, spiderCenter, &v);
+			// ROT = 180.0f;
 			STATE += 1;
 			break;
 	}
