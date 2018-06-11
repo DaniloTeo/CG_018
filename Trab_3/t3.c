@@ -1,9 +1,10 @@
 #define _USE_MATH_DEFINES // for C
-
+#define STB_IMAGE_IMPLEMENTATION
 #include <math.h>
 #include <GL/glut.h>
 #include <stdlib.h>
 #include <stdio.h>
+#include "stb_image.h"
 
 int width = 800;
 int height = 400;
@@ -81,6 +82,63 @@ GLint LAST_KEY;
 GLfloat ROT; //clockwise!
 int STATE;
 
+char textures_faces[6][23] = {
+	"orbital-element_rt.tga",
+	"orbital-element_lf.tga",
+	"orbital-element_up.tga",
+	"orbital-element_dn.tga",
+	"orbital-element_bk.tga",
+	"orbital-element_ft.tga",
+};
+
+float skyboxVertices[] = {
+    // positions          
+    -1.0f,  1.0f, -1.0f,
+    -1.0f, -1.0f, -1.0f,
+     1.0f, -1.0f, -1.0f,
+     1.0f, -1.0f, -1.0f,
+     1.0f,  1.0f, -1.0f,
+    -1.0f,  1.0f, -1.0f,
+
+    -1.0f, -1.0f,  1.0f,
+    -1.0f, -1.0f, -1.0f,
+    -1.0f,  1.0f, -1.0f,
+    -1.0f,  1.0f, -1.0f,
+    -1.0f,  1.0f,  1.0f,
+    -1.0f, -1.0f,  1.0f,
+
+     1.0f, -1.0f, -1.0f,
+     1.0f, -1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f, -1.0f,
+     1.0f, -1.0f, -1.0f,
+
+    -1.0f, -1.0f,  1.0f,
+    -1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f, -1.0f,  1.0f,
+    -1.0f, -1.0f,  1.0f,
+
+    -1.0f,  1.0f, -1.0f,
+     1.0f,  1.0f, -1.0f,
+     1.0f,  1.0f,  1.0f,
+     1.0f,  1.0f,  1.0f,
+    -1.0f,  1.0f,  1.0f,
+    -1.0f,  1.0f, -1.0f,
+
+    -1.0f, -1.0f, -1.0f,
+    -1.0f, -1.0f,  1.0f,
+     1.0f, -1.0f, -1.0f,
+     1.0f, -1.0f, -1.0f,
+    -1.0f, -1.0f,  1.0f,
+     1.0f, -1.0f,  1.0f
+};
+
+void drawSkybox();
+int loadCubemap();
+unsigned int cubemapTexture;
 
 
 //PROTOTIPOS DAS FUNCOES DE VISUALIZACAO/////////////////////////////////////////////////////////////////////////////
@@ -115,6 +173,13 @@ void drawAxes(Vertex *basePoint, Vertex *i, Vertex *j, Vertex *k);
  */
 void drawWCAxes();
 
+/**
+ * @desc Desenha a skybox.
+ */
+void drawSkybox();
+int loadCubemap();
+unsigned int cubemapTexture;
+
 //DEFINICAO DAS VIEWPORTS
 void displayCallback();
 void reshapeCallback(int w, int h);
@@ -140,7 +205,7 @@ int main(int argc, char **argv){
 	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
 	glutInitWindowPosition(100, 100);
 	glutInitWindowSize(width, height);
-	glutCreateWindow("Trabalho 2");
+	glutCreateWindow("Trabalho 3");
 	glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
 
 	
@@ -150,8 +215,10 @@ int main(int argc, char **argv){
 	glutSpecialFunc(handle_SpecialFunc);
 	glutTimerFunc(REFRESH_DELAY, update, 0);
 
-	
+    cubemapTexture = loadCubemap();
+
 	glutMainLoop();
+
 	return 0;
 }
 
@@ -177,6 +244,7 @@ void drawGrid(float size, float step){
         glEnd();
         glTranslatef(0.0, 0.0, -i);
     }
+    glColor3f(0.0, 0.0, 0.0);
 }
 
 
@@ -211,7 +279,49 @@ void initializeVertex(Vertex *v, GLfloat x, GLfloat y, GLfloat z){
 	v->z = z;
 }
 
+void drawSkybox(){		
+    glColor3f(1.0, 1.0, 1.0);
+	glTranslatef(50,50,50);
+	glScalef(100.0f,100.0f,100.0f);    
+    glEnable(GL_TEXTURE_CUBE_MAP);
+	glBegin(GL_TRIANGLES);
+	for(int i = 0; i < 128; i+=3) {
+		glTexCoord3f(skyboxVertices[i], skyboxVertices[i+1], skyboxVertices[i+2]);
+		glVertex3f(skyboxVertices[i], skyboxVertices[i+1], skyboxVertices[i+2]);
+	}
+	glEnd();
+	glDisable(GL_TEXTURE_CUBE_MAP);
+	glScalef(1/100.0f,1/100.0f,1/100.0f);
+	glTranslatef(-50,-50,-50);
+}
 
+int loadCubemap(){
+	unsigned int texture;
+	glGenTextures(1, &texture);
+	glBindTexture(GL_TEXTURE_CUBE_MAP, texture);
+	
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE); 
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	int width, height, nrChannels;
+	unsigned char *data;  	
+	for(GLuint i = 0; i < 6; i++) {		
+		if(i == 2)
+			stbi_set_flip_vertically_on_load(1); 
+		else
+			stbi_set_flip_vertically_on_load(0);
+	    data = stbi_load(textures_faces[i], &width, &height, &nrChannels, 0);
+	    glTexImage2D(
+	        GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 
+	        0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data
+	    );
+		stbi_image_free(data);
+	}
+
+	return texture;
+}
 
 void drawWCAxes(){
 	Vertex basePoint, i, j, k;
@@ -221,12 +331,6 @@ void drawWCAxes(){
 	initializeVertex(&k, 0.0f, 0.0f, 5.0f);
 	
 	drawAxes(&basePoint, &i, &j, &k);
-}
-
-void drawSkybox(){
-	unsigned int textureID;
-	glGenTextures(1, &textureID);
-	glBindTexture(GL_TEXTURE_CUBE_MAP, textureID);
 }
 
 
@@ -417,30 +521,19 @@ void displayCallback(){
 	// 			abCenter.y,
 	// 			-sin(M_PI * -ROT / 180.0) * abCenter.x + cos(M_PI * -ROT / 180.0) * abCenter.z);
 	addVertexesv(&abPos, spiderCenter, &abCenter);
-	
-	
+
 	//bottom left viewport - free view
 	glLoadIdentity();
 	addVertexes(&v, &abPos, 3.0, 2.0, 10.0);
+
 	gluLookAt(v.x, v.y, v.z,
 				abPos.x, abPos.y, abPos.z,
 				0.0, 1.0, 0.0);
 	glViewport(0, 0, view_width/2, view_height);
+	drawSkybox();
 	drawGrid(100.0, 1.0);
 	drawWCAxes();
 	drawSpider();
-
-	
-	// //bottom right viewport - z-axis view
-	// glLoadIdentity();
-	// addVertexes(&v, &abPos, 0.0, 0.0, 10.0);
-	// gluLookAt(v.x, v.y, v.z,
-	// 			abPos.x, abPos.y, abPos.z,
-	// 			0.0, 1.0, 0.0);
-	// glViewport(width/2, 0, width/2, height/2);
-	// drawGrid(100.0, 1.0);
-	// drawWCAxes();
-	// drawSpider();
 
 	//u left viewport - y-axis view
 	glLoadIdentity();
@@ -449,23 +542,10 @@ void displayCallback(){
 				abPos.x, abPos.y, abPos.z,
 				0.0, 0.0, 1.0); // up vector becomes k
 	glViewport(width/2, 0, view_width/2, view_height);
+	drawSkybox();
 	drawGrid(100.0, 1.0);
 	drawWCAxes();
 	drawSpider();
-	
-	
-	// //top right viewport - x-axis view
-	// glLoadIdentity();
-	// addVertexes(&v, &abPos, 10.0, 0.0, 0.0);
-	// gluLookAt(v.x, v.y, v.z,
-	// 			abPos.x, abPos.y, abPos.z,
-	// 			0.0, 1.0, 0.0);
-	// glViewport(width/2, height/2, width/2, height/2);
-	// drawGrid(100.0, 1.0);
-	// drawWCAxes();
-	// drawSpider();
-
-
 	
 
 	/** Dispara os comandos APENAS uma vez */
@@ -480,7 +560,7 @@ void reshapeCallback(int w, int h){
 	/** Define o volume de vista */
 	glMatrixMode(GL_PROJECTION);
 	glLoadIdentity();
-	gluPerspective(80.0, (GLfloat) width/(GLfloat) height, 1.0, 20.0);
+	gluPerspective(80.0, (GLfloat) width/(GLfloat) height, 1.0, 250.0);
 	glMatrixMode(GL_MODELVIEW);
 }
 
