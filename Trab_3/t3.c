@@ -5,6 +5,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include "stb_image.h"
+#include <opencv2/opencv.hpp>
 
 int width = 800;
 int height = 400;
@@ -72,6 +73,13 @@ void mulVertex(Vertex* v, Vertex* a, float b) {
     v -> z = a -> z * b;
 }
 
+void rotateVertexOnY(Vertex* v, Vertex* a, float b) {
+	GLfloat aux_x = a -> x;
+    v -> x =  cos(M_PI * -b / 180.0) * aux_x + sin(M_PI * -b / 180.0) * a -> z;
+    v -> y = a -> y;
+    v -> z = -sin(M_PI * -b / 180.0) * aux_x + cos(M_PI * -b / 180.0) * a -> z;
+}
+
 Vertex cefaloCenter;
 Vertex abCenter;
 Vertex* spiderCenter;
@@ -81,6 +89,9 @@ GLint ACTIVE_KEY;
 GLint LAST_KEY;
 GLfloat ROT; //clockwise!
 int STATE;
+cv::Mat hello1;
+cv::Mat hello2;
+GLuint texName[2];
 
 char textures_faces[6][23] = {
 	"orbital-element_rt.tga",
@@ -135,10 +146,6 @@ float skyboxVertices[] = {
     -1.0f, -1.0f,  1.0f,
      1.0f, -1.0f,  1.0f
 };
-
-void drawSkybox();
-int loadCubemap();
-unsigned int cubemapTexture;
 
 
 //PROTOTIPOS DAS FUNCOES DE VISUALIZACAO/////////////////////////////////////////////////////////////////////////////
@@ -200,6 +207,9 @@ int main(int argc, char **argv){
 	origin = newVertex(0.0f, 0.0f, 0.0f);
 	STATE = 0;
 	ROT = 0.0f;
+
+	hello1 = cv::imread("hellokittytexture1.jpg");
+	hello2 = cv::imread("hellokittytexture2.jpg");
 
 	glutInit(&argc, argv);
 	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
@@ -336,20 +346,78 @@ void drawWCAxes(){
 
 void drawAbdomen(GLfloat center_x, GLfloat center_y, GLfloat center_z){
 	glPushMatrix();
+
 		
-		glColor3f(1.0f, 1.0f, 1.0f);
-		glTranslatef(center_x, center_y, center_z); 
-		glutSolidSphere(abRadius, abSlices, abStacks); //esfera com centro (0,0,0)
-	
+		
+		// glColor3f(1.0f, 1.0f, 1.0f);
+		// glTranslatef(center_x, center_y, center_z); 
+		// glutSolidSphere(abRadius, abSlices, abStacks); //esfera com centro (0,0,0)
+
+		glGenTextures(1, texName);
+		glBindTexture(GL_TEXTURE_3D, texName[0]);
+		
+		glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_BASE_LEVEL, 0);
+		glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAX_LEVEL, 0);
+		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
+		// glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_REFLECTION_MAP);
+		// glTexGeni(GL_R, GL_TEXTURE_GEN_MODE, GL_REFLECTION_MAP);
+		// glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_REFLECTION_MAP);
+
+		glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA, hello2.cols, hello2.rows, 1, 0, GL_BGR, GL_UNSIGNED_BYTE, hello2.ptr());
+
+		glEnable(GL_TEXTURE_3D);
+
+		GLUquadric *quadObj = gluNewQuadric();
+
+		gluQuadricTexture(quadObj, GL_TRUE);
+		gluSphere(quadObj, abRadius, abSlices, abStacks);
+		gluDeleteQuadric(quadObj);
+
+		glDisable(GL_TEXTURE_3D);
+			
 	glPopMatrix();
 }
 
 void drawCefaloTorax(GLfloat center_x, GLfloat center_y, GLfloat center_z){
 	glPushMatrix();
+
+		glGenTextures(1, texName);
+		glBindTexture(GL_TEXTURE_3D, texName[0]);
 		
-		glColor3f(1.0f, 0.0f, 0.0f);
-		glTranslatef(center_x, center_y, center_z); 
-		glutSolidSphere(cefaloRadius, cefaloSlices, cefaloStacks); //esfera com centro (0,0,0)
+		glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_WRAP_R, GL_REPEAT);
+		glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAG_FILTER, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MIN_FILTER, GL_CLAMP_TO_EDGE);
+		glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_BASE_LEVEL, 0);
+		glTexParameteri(GL_TEXTURE_3D, GL_TEXTURE_MAX_LEVEL, 0);
+		glTexEnvf(GL_TEXTURE_ENV, GL_TEXTURE_ENV_MODE, GL_DECAL);
+		// glTexGeni(GL_S, GL_TEXTURE_GEN_MODE, GL_REFLECTION_MAP);
+		// glTexGeni(GL_R, GL_TEXTURE_GEN_MODE, GL_REFLECTION_MAP);
+		// glTexGeni(GL_T, GL_TEXTURE_GEN_MODE, GL_REFLECTION_MAP);
+
+		glTexImage3D(GL_TEXTURE_3D, 0, GL_RGBA, hello2.cols, hello2.rows, 1, 0, GL_BGR, GL_UNSIGNED_BYTE, hello2.ptr());
+		
+
+		glEnable(GL_TEXTURE_3D);
+
+		GLUquadric *quadObj = gluNewQuadric();
+
+		gluQuadricTexture(quadObj, GL_TRUE);
+		gluSphere(quadObj, cefaloRadius, cefaloSlices, cefaloStacks);
+		gluDeleteQuadric(quadObj);
+
+		glDisable(GL_TEXTURE_3D);
+
+
+		// glColor3f(1.0f, 0.0f, 0.0f);
+		// glTranslatef(center_x, center_y, center_z); 
+		// glutSolidSphere(cefaloRadius, cefaloSlices, cefaloStacks); //esfera com centro (0,0,0)
 	
 	glPopMatrix();
 }
@@ -571,25 +639,35 @@ int isArrowKey(GLint key) {
 void update(int value) {
 
 	
+	Vertex v;
+	
 	switch (ACTIVE_KEY) {
 		case GLUT_KEY_LEFT:
-			addVertexes(spiderCenter, spiderCenter, STEP_SIZE, 0.0f, 0.0f);
-			ROT = -90.0f;
-			STATE += 1;
+			// addVertexes(spiderCenter, spiderCenter, STEP_SIZE, 0.0f, 0.0f);
+			ROT += -45.0f;
+			STATE = 0;
 			break;
 		case GLUT_KEY_UP:
-			addVertexes(spiderCenter, spiderCenter, 0.0f, 0.0f, STEP_SIZE);
-			ROT = 0.0f;
+
+			initializeVertex(&v, 0.0f, 0.0f, STEP_SIZE);
+			rotateVertexOnY(&v, &v, ROT);
+			// printf("%f, %f\n", v.x, v.z);
+			addVertexesv(spiderCenter, spiderCenter, &v);
+			// ROT = 0.0f;
 			STATE += 1;
 			break;
 		case GLUT_KEY_RIGHT:
-			addVertexes(spiderCenter, spiderCenter, -STEP_SIZE, 0.0f, 0.0f);
-			ROT = 90.0f;
-			STATE += 1;
+			// addVertexes(spiderCenter, spiderCenter, -STEP_SIZE, 0.0f, 0.0f);
+			ROT += 45.0f;
+			STATE  = 0;
 			break;
 		case GLUT_KEY_DOWN:
-			addVertexes(spiderCenter, spiderCenter, 0.0f, 0.0f, -STEP_SIZE);
-			ROT = 180.0f;
+			
+			initializeVertex(&v, 0.0f, 0.0f, -STEP_SIZE);
+			rotateVertexOnY(&v, &v, ROT);
+			// printf("%f, %f\n", v.x, v.z);
+			addVertexesv(spiderCenter, spiderCenter, &v);
+			// ROT = 180.0f;
 			STATE += 1;
 			break;
 	}
