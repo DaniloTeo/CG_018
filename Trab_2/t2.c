@@ -8,6 +8,10 @@
 int width = 800;
 int height = 800;
 
+int fogToggle = 1;
+
+static GLint fogMode;
+
 const GLfloat abRadius = 2.0f;
 const int abStacks = 20;
 const int abSlices = 20;
@@ -85,7 +89,10 @@ void drawAbdomen(GLfloat center_x, GLfloat center_y, GLfloat center_z);
 void drawCefaloTorax(GLfloat center_x, GLfloat center_y, GLfloat center_z);
 void drawLegs();
 void drawSpider();
+
+
 void handle_SpecialFunc(GLint key, GLint x, GLint y);
+void handleFog(unsigned char key, int x, int y);
 void update(int value);
 
 //DESENHO DO GRID - CODIGOS FORNECIDOS PELO MONITOR DIEGO CINTRA
@@ -144,6 +151,7 @@ int main(int argc, char **argv){
 	glutReshapeFunc(reshapeCallback);
 
 	glutSpecialFunc(handle_SpecialFunc);
+	glutKeyboardFunc(handleFog);
 	glutTimerFunc(REFRESH_DELAY, update, 0);
 
 	
@@ -478,8 +486,32 @@ int isArrowKey(GLint key) {
 	return key == GLUT_KEY_LEFT || key == GLUT_KEY_UP || key == GLUT_KEY_RIGHT || key == GLUT_KEY_DOWN;
 }
 
-void update(int value) {
+void handleFog(unsigned char key, int x, int y){
+	if(key == 'n' || key == 'N'){
+		if(fogToggle == 1){
+			glEnable(GL_FOG);
+			{
+				GLfloat fogColor[4] = { 0.5, 0.5, 0.5, 1.0};
 
+				fogMode = GL_EXP;
+				glFogi(GL_FOG_MODE, fogMode);
+				glFogfv(GL_FOG_COLOR, fogColor);
+				glFogf(GL_FOG_DENSITY, 0.1);
+				glFogf(GL_FOG_START, 1.0);
+				glFogf(GL_FOG_END, 10.0);
+			}
+			glClearColor(0.5, 0.5, 0.5, 1.0); /* fog color */
+			fogToggle = 0;
+		}
+		else if(fogToggle == 0){
+			glDisable(GL_FOG);
+			glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+			fogToggle = 1;
+		}
+	}
+}
+
+void update(int value) {
 	
 	switch (ACTIVE_KEY) {
 		case GLUT_KEY_LEFT:
