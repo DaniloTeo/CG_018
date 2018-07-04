@@ -10,6 +10,10 @@
 int width = 800;
 int height = 400;
 
+// FOG
+int fogToggle = 1;
+static GLint fogMode;
+
 
 int view_width = 800;
 int view_height = 400;
@@ -155,6 +159,7 @@ void drawCefaloTorax(GLfloat center_x, GLfloat center_y, GLfloat center_z);
 void drawLegs();
 void drawSpider();
 void handle_SpecialFunc(GLint key, GLint x, GLint y);
+void handleFog(unsigned char key, int x, int y);
 void update(int value);
 
 //DESENHO DO GRID - CODIGOS FORNECIDOS PELO MONITOR DIEGO CINTRA
@@ -199,6 +204,8 @@ void initializeVertex(Vertex *v, GLfloat x, GLfloat y, GLfloat z);
 
 
 int main(int argc, char **argv){
+
+	
 	
 	initializeVertex(&abCenter, 0.0f, 0.0f, -(abRadius + cefaloRadius)); //inicializacao de abCenter
 	initializeVertex(&cefaloCenter, 0.0f, 0.0f, 0.0f); //inicializacao de cefaloCenter
@@ -212,7 +219,7 @@ int main(int argc, char **argv){
 	hello2 = cv::imread("hellokittytexture2.jpg");
 
 	glutInit(&argc, argv);
-	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB);
+	glutInitDisplayMode(GLUT_SINGLE | GLUT_RGB | GLUT_DEPTH);
 	glutInitWindowPosition(100, 100);
 	glutInitWindowSize(width, height);
 	glutCreateWindow("Trabalho 3");
@@ -223,10 +230,14 @@ int main(int argc, char **argv){
 	glutReshapeFunc(reshapeCallback);
 
 	glutSpecialFunc(handle_SpecialFunc);
+	glutKeyboardFunc(handleFog);
 	glutTimerFunc(REFRESH_DELAY, update, 0);
 
     cubemapTexture = loadCubemap();
 
+	glClearDepth(1.0f);
+	glEnable(GL_DEPTH_TEST);
+	glDepthFunc(GL_LEQUAL);
 	glutMainLoop();
 
 	return 0;
@@ -580,7 +591,8 @@ void drawSpider(){
 
 void displayCallback(){
 	/** Limpa a janela APENAS uma vez */
-	glClear(GL_COLOR_BUFFER_BIT);
+	// glClear(GL_COLOR_BUFFER_BIT);
+	glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
 	Vertex abPos; // center of the view
 	Vertex v; // eye pos
@@ -706,6 +718,31 @@ void handle_SpecialFunc(GLint key, GLint x, GLint y){
 			case GLUT_KEY_DOWN:
 				ACTIVE_KEY = key;
 				break;
+		}
+	}
+}
+
+void handleFog(unsigned char key, int x, int y){
+	if(key == 'n' || key == 'N'){
+		if(fogToggle == 1){
+			glEnable(GL_FOG);
+			{
+				GLfloat fogColor[4] = { 0.5, 0.5, 0.5, 1.0};
+
+				fogMode = GL_EXP;
+				glFogi(GL_FOG_MODE, fogMode);
+				glFogfv(GL_FOG_COLOR, fogColor);
+				glFogf(GL_FOG_DENSITY, 0.1);
+				glFogf(GL_FOG_START, 1.0);
+				glFogf(GL_FOG_END, 10.0);
+			}
+			glClearColor(0.5, 0.5, 0.5, 1.0); /* fog color */
+			fogToggle = 0;
+		}
+		else if(fogToggle == 0){
+			glDisable(GL_FOG);
+			glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+			fogToggle = 1;
 		}
 	}
 }
